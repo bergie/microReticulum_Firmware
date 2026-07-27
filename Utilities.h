@@ -58,6 +58,9 @@ sx127x *LoRa = &sx127x_modem;
 #elif MODEM == SX1280
 #include "sx128x.h"
 sx128x *LoRa = &sx128x_modem;
+#elif MODEM == LR1110
+#include "lr11x0.h"
+lr11x0 *LoRa = &lr11x0_modem;
 #endif
 
 #include "ROM.h"
@@ -1483,6 +1486,9 @@ void setTXPower() {
 		if (model == MODEL_E9) LoRa->setTxPower(mapped_lora_txp, PA_OUTPUT_PA_BOOST_PIN);
 		if (model == MODEL_E3) LoRa->setTxPower(mapped_lora_txp, PA_OUTPUT_PA_BOOST_PIN);
 		if (model == MODEL_E8) LoRa->setTxPower(mapped_lora_txp, PA_OUTPUT_PA_BOOST_PIN);
+
+		if (model == MODEL_18) LoRa->setTxPower(mapped_lora_txp, PA_OUTPUT_PA_BOOST_PIN);
+		if (model == MODEL_19) LoRa->setTxPower(mapped_lora_txp, PA_OUTPUT_PA_BOOST_PIN);
 
 		if (model == MODEL_FE) LoRa->setTxPower(mapped_lora_txp, PA_OUTPUT_PA_BOOST_PIN);
 		if (model == MODEL_FF) LoRa->setTxPower(mapped_lora_txp, PA_OUTPUT_RFO_PIN);

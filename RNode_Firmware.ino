@@ -681,6 +681,8 @@ void setup() {
   LoRa->setPins(pin_cs, pin_reset, pin_dio, pin_busy, pin_rxen);
   #elif MODEM == SX1280
   LoRa->setPins(pin_cs, pin_reset, pin_dio, pin_busy, pin_rxen, pin_txen);
+  #elif MODEM == LR1110
+  LoRa->setPins(pin_cs, pin_reset, pin_dio, pin_busy);
   #endif
 
   #if MCU_VARIANT == MCU_ESP32 || MCU_VARIANT == MCU_NRF52 || MCU_VARIANT == MCU_NATIVE
@@ -1596,7 +1598,7 @@ void add_airtime(uint16_t written) {
       lora_symbols += lora_preamble_symbols + 0.25 + 8;
       packet_cost_ms += lora_symbols * lora_symbol_time_ms;
 
-    #elif MODEM == SX1262 || MODEM == SX1280
+    #elif MODEM == SX1262 || MODEM == SX1280 || MODEM == LR1110
       if (lora_sf < 7) {
         lora_symbols += (8*written + PHY_CRC_LORA_BITS - 4*lora_sf + PHY_HEADER_LORA_SYMBOLS);
         lora_symbols /=                              4*lora_sf;
@@ -1845,6 +1847,9 @@ void serial_callback(uint8_t sbyte) {
           #else
             if (txp > 13) txp = 13;
           #endif
+        #elif MODEM == LR1110
+          // LR1110 high-power PA tops out at 22 dBm.
+          if (txp > 22) txp = 22;
         #else
           if (txp > 17) txp = 17;
         #endif
