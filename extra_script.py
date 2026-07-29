@@ -4,6 +4,7 @@ import shutil
 import platform as platformlib
 
 from firmware_image import esp_image_sha256, firmware_hash_kiss_frame
+from uf2 import generate_uf2, find_dfu_volume
 
 #
 # Helpier functions
@@ -67,6 +68,47 @@ def target_package(target, source, env):
 #
 # Upload actions
 #
+
+# ---- UF2 (Adafruit/Seeed mass-storage bootloader, e.g. T1000-E) ----
+#
+# Boards such as the Seeed Tracker T1000-E are not flashed over serial
+# DFU. They expose a UF2 mass-storage volume in bootloader (DFU) mode and
+# the firmware is copied there as a .uf2 file. The converter in uf2.py turns
+# the linked .hex into a .uf2 with absolute addresses, so no flash base has
+# to be hardcoded.
+
+def generate_uf2_action(source, target, env):
+    build_dir = env.subst("$BUILD_DIR")
+    progname  = env.subst("$PROGNAME")
+    hex_path  = build_dir + "/" + progname + ".hex"
+    uf2_path  = build_dir + "/" + progname + ".uf2"
+    try:
+        out, blocks = generate_uf2(hex_path, uf2_path)
+        print("*** Generated UF2: %s (%d blocks)" % (out, blocks))
+        return uf2_path
+    except Exception as exc:
+        print("*** UF2 generation failed: %s" % exc)
+        return None
+
+def uf2_upload_action(source, target, env):
+    uf2_path = generate_uf2_action(source, target, env)
+    if not uf2_path:
+        return
+    vol = find_dfu_volume("T1000")
+    if vol:
+        dest = vol + "/" + os.path.basename(uf2_path)
+        shutil.copy(uf2_path, dest)
+        print("*** Copied %s -> %s" % (uf2_path, dest))
+        print("*** The board reboots into the application once the copy completes.")
+    else:
+        print("***")
+        print("*** No T1000-E DFU volume was found.")
+        print("*** To flash:")
+        print("***   1. Put the board in DFU mode: rapidly disconnect and reconnect")
+        print("***      USB (or double-tap reset) until a T1000-E drive mounts.")
+        print("***   2. Drag this file onto it:")
+        print("***      %s" % uf2_path)
+        print("***")
 
 def pre_upload(source, target, env):
     print("*** Executing pre_upload steps...")

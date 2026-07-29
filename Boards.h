@@ -1118,7 +1118,7 @@
       #define LR11X0_RFSW_TX         0x0B   // DIO5 + DIO6 + DIO8
       #define LR11X0_RFSW_TX_HP      0x0A   // DIO6 + DIO8
       #define LR11X0_RFSW_TX_HF      0x00
-      #define LR11X0_RFSW_GNSS       0x04   // DIO7
+      #define LR11X0_RFSW_GNSS       0x00   // GNSS switch unused (LoRa only)
       #define LR11X0_RFSW_WIFI       0x00
 
       // RX boosted gain improves sensitivity on the T1000-E front end.
