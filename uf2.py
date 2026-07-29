@@ -128,3 +128,72 @@ def find_dfu_volume(name_token="T1000"):
                 if os.path.exists(os.path.join(candidate, "INFO_UF2.TXT")):
                     return candidate
     return None
+
+
+def upload_via_uf2(hex_path, uf2_path=None, volume_token="T1000"):
+    """Generate a UF2 from an Intel HEX image and, if a UF2 mass-storage
+    bootloader volume is currently mounted, copy it there. Intended to back
+    the platform's `upload` target for boards such as the Seeed T1000-E that
+    flash by drag-and-drop rather than serial DFU. Returns 0 on success.
+
+    When no DFU volume is found this prints step-by-step drag-and-drop
+    instructions instead of failing, so the same command works whether or not
+    the board is currently in bootloader mode."""
+    import shutil
+
+    if not uf2_path:
+        base, _ = os.path.splitext(hex_path)
+        uf2_path = base + ".uf2"
+
+    try:
+        out, blocks = generate_uf2(hex_path, uf2_path)
+        print("*** Generated UF2: %s (%d blocks)" % (out, blocks))
+    except Exception as exc:
+        print("*** UF2 generation failed: %s" % exc)
+        return 1
+
+    vol = find_dfu_volume(volume_token)
+    if vol:
+        dest = os.path.join(vol, os.path.basename(uf2_path))
+        shutil.copy(uf2_path, dest)
+        print("*** Copied %s -> %s" % (uf2_path, dest))
+        print("*** The board reboots into the application once the copy completes.")
+    else:
+        print("***")
+        print("*** No %s DFU volume was found." % volume_token)
+        print("*** To flash:")
+        print("***   1. Put the board in DFU mode: rapidly disconnect and reconnect")
+        print("***      USB (or double-tap reset) until a %s drive mounts." % volume_token)
+        print("***   2. Drag this file onto it:")
+        print("***      %s" % uf2_path)
+        print("***")
+    return 0
+
+
+def _cli_main(argv=None):
+    """Command-line entry point: `python uf2.py --hex firmware.hex`.
+
+    Used as UPLOADCMD for the T1000-E upload target so the UF2 conversion +
+    drag-and-drop copy can run outside the SCons action callbacks."""
+    import argparse
+    import sys
+
+    parser = argparse.ArgumentParser(
+        description="Convert an Intel HEX firmware image to UF2 and copy it "
+                    "to a mounted UF2 (mass-storage) bootloader volume.")
+    parser.add_argument("--hex", required=True,
+                        help="Path to the input Intel HEX firmware image.")
+    parser.add_argument("--uf2",
+                        help="Path for the generated UF2 file. Defaults to the "
+                             ".hex path with a .uf2 extension.")
+    parser.add_argument("--volume-token", default="T1000",
+                        help="Token used to locate the mounted DFU volume "
+                             "(matched case-insensitively against the volume "
+                             "name). Default: T1000.")
+    args = parser.parse_args(argv)
+    return upload_via_uf2(args.hex, args.uf2, args.volume_token)
+
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(_cli_main())
