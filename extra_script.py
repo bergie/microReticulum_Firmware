@@ -86,7 +86,7 @@ def generate_uf2_action(source, target, env):
     try:
         out, blocks = generate_uf2(hex_path, uf2_path)
         print("*** Generated UF2: %s (%d blocks)" % (out, blocks))
-        return uf2_path
+        return None
     except Exception as exc:
         print("*** UF2 generation failed: %s" % exc)
         return None

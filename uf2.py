@@ -11,6 +11,8 @@
 #
 # Licensed under the MIT license.
 
+import os
+import shutil
 import struct
 
 # UF2 on-wire constants.
