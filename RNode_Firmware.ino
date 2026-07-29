@@ -1361,6 +1361,9 @@ void ISR_VECT receive_callback(int packet_size) {
   }
 
   if (ready) {
+    #if BOARD_MODEL == BOARD_T1000E
+      led_event_blip(1);
+    #endif
     #if MCU_VARIANT != MCU_ESP32 && MCU_VARIANT != MCU_NRF52 && MCU_VARIANT != MCU_NATIVE
       // We first signal the RSSI of the
       // recieved packet to the host.
@@ -1487,7 +1490,11 @@ volatile bool queue_flushing = false;
 void flush_queue(void) {
   if (!queue_flushing) {
     queue_flushing = true;
-    led_tx_on();
+    #if BOARD_MODEL == BOARD_T1000E
+      led_event_blip(2);
+    #else
+      led_tx_on();
+    #endif
 
     #if MCU_VARIANT == MCU_ESP32 || MCU_VARIANT == MCU_NRF52 || MCU_VARIANT == MCU_NATIVE
     while (!fifo16_isempty(&packet_starts)) {
@@ -1527,7 +1534,12 @@ void flush_queue(void) {
 
 void pop_queue() {
   if (!queue_flushing) {
-    queue_flushing = true; led_tx_on();
+    queue_flushing = true;
+    #if BOARD_MODEL == BOARD_T1000E
+      led_event_blip(2);
+    #else
+      led_tx_on();
+    #endif
 
     #if MCU_VARIANT == MCU_ESP32 || MCU_VARIANT == MCU_NRF52 || MCU_VARIANT == MCU_NATIVE
     if (!fifo16_isempty(&packet_starts)) {
@@ -2410,6 +2422,7 @@ void update_modem_status() {
   if (carrier_detected) { dcd = true; } else { dcd = false; }
 
   dcd_led = dcd;
+  #if BOARD_MODEL != BOARD_T1000E
   if (dcd_led) { led_rx_on(); }
   else {
     if (interference_detected && noise_floor_sampled) {
@@ -2419,6 +2432,7 @@ void update_modem_status() {
       else              { led_rx_off(); led_id_off(); }
     }
   }
+  #endif
 
   update_noise_floor();
 }

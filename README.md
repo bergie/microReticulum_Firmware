@@ -100,6 +100,31 @@ Build and package all environments (boards):
 pio run -t package
 ```
 
+### Flashing the Seeed Tracker T1000-E (UF2)
+
+Unlike the other supported boards, the T1000-E does **not** flash over serial
+DFU. Its bootloader exposes a **UF2 mass-storage** volume, and you flash by
+dragging a `.uf2` firmware file onto it.
+
+The build produces this file automatically alongside the usual artifacts:
+
+```
+.pio/build/seeed_t1000e/rnode_firmware_t1000e.uf2
+```
+(generate it explicitly with `pio run -e seeed_t1000e -t uf2`, or find the
+packaged copy at `Release/rnode_firmware_t1000e.uf2` after `-t package`.)
+
+To flash:
+
+1. Put the board in **DFU mode**: rapidly disconnect and reconnect the USB
+   cable (or double-tap the reset button) until a `T1000-E` drive mounts.
+2. Drag `rnode_firmware_t1000e.uf2` onto that drive. The board flashes and
+   reboots into the application automatically when the copy finishes.
+
+`pio run -e seeed_t1000e -t upload` automates this: it builds the `.uf2`,
+looks for the mounted DFU volume and copies the file there. If no volume is
+found it prints the drag-and-drop instructions above as a fallback.
+
 Write version info:
   python release_hashes.py > Release/release.json
 

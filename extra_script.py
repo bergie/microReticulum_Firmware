@@ -1,6 +1,7 @@
 import time
 import hashlib
 import shutil
+import os
 import platform as platformlib
 
 from firmware_image import esp_image_sha256, firmware_hash_kiss_frame
@@ -295,6 +296,10 @@ def firmware_package(env):
         env.Execute(zip_cmd)
     elif (platform == "nordicnrf52"):
         env.Execute("cp " + build_dir + "/" + env.subst("$PROGNAME") + ".zip " + project_dir + "/Release/.")
+        # UF2 image for Adafruit/Seeed mass-storage-bootloader boards (T1000-E).
+        uf2_artifact = build_dir + "/" + env.subst("$PROGNAME") + ".uf2"
+        if os.path.exists(uf2_artifact):
+            env.Execute("cp " + uf2_artifact + " " + project_dir + "/Release/.")
     else:
         env.Execute("cp " + build_dir + "/" + env.subst("$PROGNAME") + " " + build_dir + "/rnoded")
         env.Execute("rm -f " + project_dir + "/Release/rnoded-" + get_target() + ".zip")
@@ -343,6 +348,11 @@ elif (platform == "nordicnrf52"):
     # remove --specs=nano.specs to allow exceptions to work
     if '--specs=nano.specs' in env['LINKFLAGS']:
         env['LINKFLAGS'].remove('--specs=nano.specs')
+    # Generate a UF2 image alongside the linked .hex for boards that flash
+    # via the Adafruit/Seeed mass-storage bootloader (e.g. T1000-E). The
+    # .hex is emitted by the Arduino core's objcopy step, so this post-action
+    # fires once it exists. Harmless on boards that never use the .uf2.
+    env.AddPostAction("$BUILD_DIR/${PROGNAME}.hex", generate_uf2_action)
     env.AddCustomTarget(
         name="package",
         dependencies="$BUILD_DIR/${PROGNAME}.zip",
@@ -363,6 +373,29 @@ else:
         description="Package native daemon for delivery"
     )
 
-# Register actions
-env.AddPreAction("upload", pre_upload)
-env.AddPostAction("upload", post_upload)
+# Register upload actions.
+#
+# The T1000-E flashes by dragging a .uf2 onto its DFU mass-storage volume,
+# not over serial DFU, so its `upload` target generates the .uf2 and copies
+# it to the mounted volume (with drag-and-drop instructions as a fallback).
+# The serial-DFU / rnodeconf pre- and post-upload steps are only wired up for
+# the other boards that actually use nrfutil.
+variant = env.GetProjectOption("custom_variant", "")
+if variant == "t1000e":
+    env.AddCustomTarget(
+        name="uf2",
+        dependencies="$BUILD_DIR/${PROGNAME}.hex",
+        actions=[generate_uf2_action],
+        title="Generate UF2",
+        description="Build a .uf2 file for drag-and-drop flashing"
+    )
+    env.AddCustomTarget(
+        name="upload",
+        dependencies="$BUILD_DIR/${PROGNAME}.hex",
+        actions=[generate_uf2_action, uf2_upload_action],
+        title="Upload",
+        description="Upload via UF2 drag-and-drop to the T1000-E DFU volume"
+    )
+else:
+    env.AddPreAction("upload", pre_upload)
+    env.AddPostAction("upload", post_upload)

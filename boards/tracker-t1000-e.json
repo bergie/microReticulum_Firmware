@@ -50,9 +50,9 @@
       "cmsis-dap",
       "blackmagic"
     ],
-    "use_1200bps_touch": true,
-    "require_upload_port": true,
-    "wait_for_upload_port": true
+    "use_1200bps_touch": false,
+    "require_upload_port": false,
+    "wait_for_upload_port": false
   },
   "url": "https://www.seeedstudio.com/SenseCAP-Card-Tracker-T1000-E-for-Meshtastic-p-5913.html",
   "vendor": "Seeed Studio"
