@@ -2723,6 +2723,7 @@ void loop() {
 
     tx_queue_handler();
     check_modem_status();
+    led_update();
     #if MCU_VARIANT == MCU_NATIVE
       // Drop a TCP host client that's gone silent past the idle window.
       // poll_accept() in buffer_serial() handles the connect side; this

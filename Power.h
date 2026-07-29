@@ -459,6 +459,15 @@ void measure_battery() {
 }
 
 void update_pmu() {
+  #if MCU_VARIANT == MCU_NRF52
+    // The nRF52840 POWER peripheral exposes USB VBUS presence directly.
+    // VBUSDETECT reads true whenever USB power is connected (independent
+    // of enumeration), which is what the LED/battery UX treats as
+    // "external power". Sampled every pass so hot-plug is reflected promptly.
+    #if defined(NRF_POWER) && defined(POWER_USBREGSTATUS_VBUSDETECT_Msk)
+      external_power = (NRF_POWER->USBREGSTATUS & POWER_USBREGSTATUS_VBUSDETECT_Msk) != 0;
+    #endif
+  #endif
   if (millis()-last_pmu_update >= pmu_update_interval) {
     measure_battery();
     measure_temperature();
